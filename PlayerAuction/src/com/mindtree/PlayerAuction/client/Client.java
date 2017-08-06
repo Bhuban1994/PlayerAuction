@@ -24,9 +24,14 @@ public class Client {
 		Business b=new Business();
 		do
 		{
+			System.out.println();
+			System.out.println("====================================");
+			System.out.println("Welcome to the !!!Player Auction!!!");
+			System.out.println("====================================");
 			System.out.println("Enter options\n1-ADD PLAYER\n2-DISPLAY PLAYER\n3-EXIT\n");
 			ch=sc.nextInt();
-			switch(ch){
+			switch(ch)
+			{
 				case 1:
 					sc.nextLine();
 					System.out.println("Enter the playername");
@@ -35,41 +40,53 @@ public class Client {
 					System.out.println("Enter the category");
 					player.setCategory(sc.nextLine());
 					//for category validation
-					b.checkCategory(player.getCategory());
-					
-					System.out.println("Enter the team name for the player");
-					team.setTeam_name(sc.next());
-					b.checkTeamName(team.getTeam_name());
-					
-					//for duplicates
-					b.checkDuplicate(player.getName(),player.getCategory(),team.getTeam_name());
-					
-					
-					System.out.println("Enter the highest score");
-					player.setHighestscore(sc.nextInt());
-					
-					sc.nextLine();
-					
-					System.out.println("Enter the best figure");
-					player.setBestfigure(sc.next());
-					
-					
-					
-					if(player.getCategory().equalsIgnoreCase("Batsman"))
+					boolean res=false;
+					res=b.checkCategory(player.getCategory());
+					if(res==true)
 					{
-						b.checkBatsman(player.getCategory(),player.getHighestscore(),player.getBestfigure());
+						System.out.println("Enter the team name for the player");
+						team.setTeam_name(sc.next());
+						//check for team present in the database
+						res=b.checkTeamName(team.getTeam_name());
+						if(res==true)
+						{
+							//for duplicates
+							res=b.checkDuplicate(player.getName(),player.getCategory(),team.getTeam_name());
+							
+							if(res==true)
+							{
+								System.out.println("Enter the highest score");
+								player.setHighestscore(sc.nextInt());
+								
+								sc.nextLine();
+								
+								System.out.println("Enter the best figure");
+								player.setBestfigure(sc.next());
+								
+								if(player.getCategory().equalsIgnoreCase("Batsman"))
+								{
+									b.checkBatsman(player.getCategory(),player.getHighestscore(),player.getBestfigure());
+									b.store();
+								}
+								
+								
+								if(player.getCategory().equalsIgnoreCase("Bowler"))
+								{
+									b.checkBowler(player.getCategory(),player.getHighestscore(),player.getBestfigure());
+									b.store();	
+								}
+								
+							}
+						}
 					}
-					
-					
-					if(player.getCategory().equalsIgnoreCase("Bowler"))
-					{
-						b.checkBowler(player.getCategory(),player.getHighestscore(),player.getBestfigure());
-						
-					}
-					b.store();
 					break;
 				case 2:
-					b.showtable();
+					//b.showtable();
+					System.out.println("Display Players!!!!");
+					System.out.println("-------------------");
+					System.out.print("Enter team name:");
+					sc.nextLine();
+					b.showTeamPlayers(sc.nextLine());
 					break;
 				case 3:
 					System.exit(1);

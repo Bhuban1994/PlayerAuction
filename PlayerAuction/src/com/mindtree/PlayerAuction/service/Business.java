@@ -31,36 +31,38 @@ public class Business extends Exception{
 	 * @throws SQLException 
 	 */
 	static String pname=null;
-	static int pno=1;
+	int pno=1;
 	static String pcategory=null;
 	static int phs;
 	static String pbf=null;
 	static String teamname=null;
-	static Player p=new Player();
+    Player p=new Player();
 	static DBconnection database_con=new DBconnection();
-    public static void checkDuplicate(String name,String category,String teamName) throws SQLException  
+    public static boolean checkDuplicate(String name,String category,String teamName) throws SQLException  
 	{
-		//Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/player_db","root","Welcome123");
-    	
     	Connection con=database_con.db();
 	    Statement stmt=con.createStatement();
-	    ResultSet rs=stmt.executeQuery("select * from player where Player_Name ='"+name+"' and category='"+category+"'");
-	   // ResultSet rs1=stmt.executeQuery("select player_no from rs.getInt("Player_no")");
-	    try{
-			    if(!rs.next())
-			    {
-			    	pname=name;
-			    	teamname=teamName;
-			    	
-			    }
-			    else
-			    {
-			    	throw new DuplicateEntryException("Player details already exist in the database");
-			    }
-		    }
-	    catch(DuplicateEntryException e){
+	    ResultSet rs=stmt.executeQuery("select p.player_name,p.category,t.team_name from player p join team_player tp join team t on p.player_no=tp.player_no && tp.team_id=t.team_id "
+	    		+ "&& p.player_name='"+name+"' && p.category='"+category+"' && t.team_name='"+teamName+"'");
+	    boolean res=false;
+	    try
+	    {
+	    	if(!rs.next())
+			{
+	    		pname=name;
+	    		teamname=teamName;
+			    res=true;
+			}
+			else
+			{
+				throw new DuplicateEntryException("Player details already exist in the database");
+			}
+		}
+	    catch(DuplicateEntryException e)
+	    {
 	        System.out.println(e.toString());
 	    }
+	    return res;
 	}
 	
 	public  String checkBowler(String category,int hs,String bestFigure)throws SQLException
@@ -101,36 +103,44 @@ public class Business extends Exception{
 	        System.out.println(e.toString());
 	    }
 	}
-	public static void checkTeamName(String team) throws SQLException
+	public static boolean checkTeamName(String team) throws SQLException
 	{
 		Connection con=database_con.db();
 		Statement stmt=con.createStatement();
 	    ResultSet rs=stmt.executeQuery("select Team_Name from team where Team_Name='"+team+"'");
-	    
+	    boolean res=false;
 	    try{
-	    	while(rs.next())
-	    	{
-		    	if(rs.getString("Team_Name")!=null)
+	    		while(rs.next())
 		    	{
-			    	teamname=rs.getString("Team_Name");
-			    }
-			    else
-			    {
-			    	throw new InvalidTeamNameException("Invalid team name,please check ur input");
-			    }
+	    			if(rs.getString("Team_Name").equalsIgnoreCase(team))
+	    			{
+	    				if(rs.getString("Team_Name")!=null)
+				    	{
+					    	teamname=rs.getString("Team_Name");
+					    	res=true;
+					    }
+					    else
+					    {
+					    	throw new InvalidTeamNameException("Invalid team name,please check ur input");
+					    }
+	    			}
+			    	
+		    	}	
 	    	}
-	    }
 	    catch(InvalidTeamNameException e){
 	    	System.out.println(e.toString());
 	    }
+		return res;
 	    
 	}
-	public static void checkCategory(String Category) throws SQLException 
+	public static boolean checkCategory(String Category) throws SQLException 
 	{
 		// TODO Auto-generated method stub
+		boolean res=false;
 		try{
 			if(Category.equalsIgnoreCase("batsman") || Category.equalsIgnoreCase("bowler") || Category.equalsIgnoreCase("allrounder")){
 				pcategory=Category;
+				res=true;
 			}
 			else
 			{
@@ -141,8 +151,9 @@ public class Business extends Exception{
 		catch(InvalidCategoryException e){
 	        System.out.println(e.toString());
 	    }
+		return res;
 	}
-	public static void store() throws SQLException
+	public void store() throws SQLException
 	{
 		// TODO Auto-generated method stub
 		Connection con=database_con.db();
@@ -155,14 +166,16 @@ public class Business extends Exception{
 	    updateemp.setString(4,pbf);
 	    updateemp.executeUpdate();
 
-	    Connection con1=DriverManager.getConnection("jdbc:mysql://localhost:3306/player_db","root","Welcome123");
-	    Statement stmt=con.createStatement();
-	    ResultSet rs=stmt.executeQuery("select Player_no from player where Player_Name='"+pname+"'");
-	    ResultSet rs1=stmt.executeQuery("select team_id from team where team_name='"+teamname+"'");
-		PreparedStatement ins1 = con1.prepareStatement(
+	    System.out.println("");
+	    PreparedStatement ins1 = con.prepareStatement(
 		         "insert into team_player(Player_no,Team_id) values(?,?)");
-		ins1.setString(1,rs.getString("Player_no"));
-		ins1.setString(2,rs1.getString("team_id"));
+	    ResultSet rs=ins1.executeQuery("select Player_no,team_id from player,team where player_name='"+pname+"' and team_name='"+teamname+"'");
+	    //ResultSet rs1=ins1.executeQuery("select team_id from team where team_name='"+teamname+"'");
+		while(rs.next()) {
+			ins1.setString(1,rs.getString("Player_no"));
+			ins1.setString(2,rs.getString("team_id"));
+		}
+		
 		ins1.executeUpdate();
 	}
 	public static void showtable() throws SQLException
@@ -170,22 +183,44 @@ public class Business extends Exception{
 		Connection con=database_con.db();
 	    Statement stmt=con.createStatement();
 	    ResultSet rs=stmt.executeQuery("select * from player");
-	      System.out.println("playerno\tplayerName\t\tcategory\t\thighestscore\t\tBestFigure");
-	      
+	    System.out.println("|==============================================================================================|");
+	    System.out.format("|%10s   |%20s   |%15s   |%15s   |%15s   |","playerno","playerName","category","highestScore","BestFigure");
+	    System.out.println();
+	    System.out.println("|==============================================================================================|");
 	      while (rs.next()) 
 	      {
 	         int id = rs.getInt("Player_No");
 	         String name = rs.getString("Player_Name");
 	         String category = rs.getString("Category");
-	         String highscore=rs.getString("HighestScore");
-	         int bestfigure=rs.getInt("BestFigure");
-	         System.out.println(id + "\t" + name+"\t\t"+category+"\t\t"+highscore+"\t\t"+bestfigure);
+	         int highscore=rs.getInt("HighestScore");
+	         String bestfigure=rs.getString("BestFigure");
+	         System.out.format("|%10d   |%20s   |%15s   |%15d   |%15s   |",id,name,category,highscore,bestfigure);
+	         System.out.println();
 	      }     
-		
+	      System.out.println("|==============================================================================================|");
 	}
 
 	public static void storeBestFigure(String bestfigure) {
 		// TODO Auto-generated method stub
 		pbf=bestfigure;
+	}
+
+	public void showTeamPlayers(String team)throws SQLException {
+		// TODO Auto-generated method stub
+		Connection con=database_con.db();
+	    Statement stmt=con.createStatement();
+	    ResultSet rs=stmt.executeQuery("select p.player_name,p.category from team_player t join team te on t.team_id=te.team_id and team_name='"+team+"' join player p on p.player_no=t.player_no order by p.player_name");
+	    System.out.println("|==========================================================|");
+	    System.out.println("|         playerName         |         category            |");
+	    System.out.println("|==========================================================|");
+	    
+	    while (rs.next()) 
+	    {
+	    	String name = rs.getString("Player_Name");
+	        String category = rs.getString("Category");
+	        System.out.format("|%20s        |       %10s            |",name,category);
+	        System.out.println();
+	    }     
+	    System.out.println("|==========================================================|");
 	}
 }

@@ -28,8 +28,8 @@ public class DBconnection
 		// TODO Auto-generated method stub
 		Connection myConn=null;
 		FileInputStream fs=null;
-		try{
-			//Class.forName("com.mysql.jdbc.Driver");
+		try
+		{
 			Properties props=new Properties();
 			fs=new FileInputStream("database.properties");
 			
@@ -39,11 +39,7 @@ public class DBconnection
 			String thePassword=props.getProperty("jdbc.PASSWORD");
 			String theDburl=props.getProperty("jdbc.URL");
 			
-		//	System.out.println("Connecting to database.....");
-			//System.out.println("Database URL: "+theDburl);
-			//System.out.println("user: ",+theUser);
 			myConn=DriverManager.getConnection(theDburl,theUser,thePassword);
-			System.out.println("\nConnection Successful!\n");
 		}
 		catch(Exception e)
 		{
